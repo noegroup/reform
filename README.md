@@ -25,10 +25,11 @@ Physcially, swappings following the above process will not affect the fact that 
 ### Design goals and road maps
 - [x] An abstract class for holding and enabling access to multiple replicas.
 - [x] Core replica exchange functionalities.
-- [ ] Implementation of the multiple replicas with OpenMM.
+- [x] Implementation of the multiple replicas with OpenMM.
 - [ ] Interfaces to the users.
-- [ ] Some test systems.
-- [ ] Implementation of multiple replicas with the `replicated_systems` (speedups for small systems).
+- [x] Some test systems.
+- [ ] (Maybe not) Implementation of multiple replicas with the `replicated_systems` (speedups for small systems).
+- [ ] Implementation of multiple replicas with concurrency in Python.
 
 ### Copyright
 
