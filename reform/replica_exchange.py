@@ -23,13 +23,18 @@ class MultiTReplicas(ABC):
     def boltzmann_constant(self) -> float:
         return self._k
 
-    def get_temp(self, num: int) -> float:
-        """Return the preset temperature for replica #num."""
-        return self._temps[num]
+    def get_temp(self, index: int) -> float:
+        """Return the preset temperature for replica #index."""
+        return self._temps[index]
+
+    def _check_index(self, index: int) -> None:
+        """Check if the given index is in range [0, _N)."""
+        if type(index) is not int or index < 0 or index >= self._N:
+            raise IndexError(f"Given index {index} does not correspond to any replica.")
 
     @abstractmethod
-    def get_potential(self, num: int) -> float:
-        """Return the potential energy of replica #num."""
+    def get_potential(self, index: int) -> float:
+        """Return the potential energy of replica #index."""
         return 0.0
 
     @abstractmethod
