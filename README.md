@@ -1,8 +1,8 @@
 Replica Exchange FOR openmM (REFORM)
 ==============================
-[//]: # (Badges)
-[![Travis Build Status](https://travis-ci.com/REPLACE_WITH_OWNER_ACCOUNT/Replica Exchange FOR openmM (REFORM).svg?branch=master)](https://travis-ci.com/REPLACE_WITH_OWNER_ACCOUNT/Replica Exchange FOR openmM (REFORM))
-[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/Replica Exchange FOR openmM (REFORM)/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/Replica Exchange FOR openmM (REFORM)/branch/master)
+<!---[//]: # (Badges)--->
+<!---[![Travis Build Status](https://travis-ci.com/REPLACE_WITH_OWNER_ACCOUNT/Replica Exchange FOR openmM (REFORM).svg?branch=master)](https://travis-ci.com/REPLACE_WITH_OWNER_ACCOUNT/Replica Exchange FOR openmM (REFORM))--->
+<!---[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/Replica Exchange FOR openmM (REFORM)/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/Replica Exchange FOR openmM (REFORM)/branch/master)--->
 
 
 A simple implementation of replica exchange MD simulations for OpenMM.
@@ -23,8 +23,8 @@ Physcially, swappings following the above process will not affect the fact that 
 - Influence of parameters in REMD: Iwai et al., [Biophys Physicobiol. 2018; 15: 165–172](https://dx.doi.org/10.2142%2Fbiophysico.15.0_165).
 
 ### Design goals and road maps
-- [ ] An abstract class for holding and enabling access to multiple replicas.
-- [ ] Core replica exchange functionalities.
+- [x] An abstract class for holding and enabling access to multiple replicas.
+- [x] Core replica exchange functionalities.
 - [ ] Implementation of the multiple replicas with OpenMM.
 - [ ] Interfaces to the users.
 - [ ] Some test systems.
