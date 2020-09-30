@@ -108,10 +108,69 @@ class OMMTReplicas(MultiTReplicas):
         for i in range(self._N):
             self._integrators[i].step(steps)
 
+    def get_state(self, index: int, getPositions=False, getVelocities=False, getForces=False, getEnergy=False) \
+            -> omm.State:
+        """Return a simtk.openmm.State object corresponding to replica #index"""
+        self._check_index(index)
+        state = self._contexts[index].getState(getPositions=getPositions, getVelocities=getVelocities,
+                                               getForces=getForces, getEnergy=getEnergy)
+        return state
+
+    def get_states(self, getPositions=False, getVelocities=False, getForces=False, getEnergy=False) -> List[omm.State]:
+        """Return a list of simtk.openmm.State object corresponding to all replicas"""
+        return [self._contexts[i].getState(getPositions=getPositions, getVelocities=getVelocities,
+                                           getForces=getForces, getEnergy=getEnergy) for i in range(self._N)]
+
     def get_instantaneous_temp(self, index: int) -> float:
         """Return the instantaneous temperature of replica #index"""
-        self._check_index(index)
-        state: omm.State = self._contexts[index].getState(getEnergy=True)
+        state = self.get_state(getEnergy=True)
         e_k = state.getKineticEnergy().value_in_unit(unit.kilojoule_per_mole)
         temp = e_k * 2 / self._n_DoF / self._k
         return temp
+
+    def get_positions(self, index: int) -> unit.Quantity:
+        """Return the positions of context #index in OpenMM internal form."""
+        return self.get_state(index, getPositions=True).getPositions(asNumpy=True)
+
+    def get_velocities(self, index: int) -> unit.Quantity:
+        """Return the velocities of context #index in OpenMM internal form."""
+        return self.get_state(index, getVelocities=True).getVelocities(asNumpy=True)
+
+    def get_all_positions_as_numpy(self, length_unit: str = "nm") -> np.ndarray:
+        """Return a numpy array of shape [self._N, number_of_particles, 3] containing particle positions from all
+        replicas in given `length_unit` (can be "nm" or "angstrom")."""
+        if length_unit == "nm":
+            l_unit = unit.nano * unit.meter
+        elif length_unit == "angstrom":
+            l_unit = unit.angstrom
+        else:
+            raise ValueError("Unknown unit!")
+        states = self.get_states(getPositions=True)
+        output = []
+        for state in states:
+            output.append(state.getPositions(asNumpy=True).value_in_unit(l_unit))
+        return np.array(output)
+
+    def save_states(self, filepath: str = "./omm_chkpt.npz"):
+        """Save the current positions and velocities into a NumPy binary archive at given `filepath`."""
+        posis = np.array([self.get_positions(i)._value for i in range(self._N)])
+        velos = np.array([self.get_velocities(i)._value for i in range(self._N)])
+        np.savez(filepath, set_temps=self._temps, positions=posis, velocities=velos)
+
+    def load_states(self, filepath: str = "./omm_chkpt.npz", check_temps=True):
+        """Load positions and velocities from a NumPy binary archive at given `filepath` to contexts."""
+        chkpt = np.load(filepath)
+        if check_temps:
+            assert np.allclose(chkpt["set_temps"], self._temps), "Preset temperatures in the checkpoint are different" \
+                                                                 " from current OMMTReplicas object."
+        assert self._N == len(chkpt["positions"]) and self._N == len(chkpt["velocities"]), \
+            "Checkpoint file is invalid: number of replicas is not consistent inside the file."
+        assert len(chkpt["set_temps"]) == len(self._temps), "Checkpoint file is incompatible: number of replicas is " \
+                                                            "not consistent with the current OMMTReplicas object."
+        assert chkpt["positions"].shape[2] == self._system.getNumParticles(), "Number of particles in the checkpoint " \
+                                                                              "file is inconsistent with the current " \
+                                                                              "OpenMM system."
+        # after checking we can load the positions and velocities
+        for i in range(self._N):
+            self.set_positions(i, chkpt["positions"][i])
+            self.set_velocities(i, chkpt["velocities"][i])
