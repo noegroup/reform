@@ -36,6 +36,7 @@ class MultiTSimulation:
     _regular_hooks: List[Tuple[int, SimulationHook]]
     _verbose: bool
     _current_step: int
+    _positions_set: bool
 
     def __init__(self, system: omm.System, temps: List[float], interface: str="single_threaded",
                  integrator_params: dict = {"integrator": "Langevin", "friction_in_inv_ps": 1.0,
@@ -59,6 +60,7 @@ class MultiTSimulation:
         self._update_interval_counter()
         self._verbose = verbose
         self._current_step = 0
+        self._positions_set = False
 
     def register_regular_hook(self, hook: SimulationHook, interval: int):
         assert interval > 0, "Invalid interval: it should be a positive integer."
@@ -95,11 +97,31 @@ class MultiTSimulation:
         `tolerance` sets the criterion for energy convergence.
         `max_iteration` sets the max number of iterations, if =0 then the minimization will continue until convergence.
         """
+        assert self._positions_set, "System positions are not yet set."
         for i in range(self._context.num_replicas):
             self._context.minimize_energy(i, tolerance, max_iterations)
 
+    def set_positions(self, positions):
+        """Setting positions for all replicas. `positions` should be a list/np.ndarray that have the same number of
+         elements as the number of replicas in the simulation context. Each element should correspond to the number of
+         particles in the underlying MD system."""
+        assert len(positions) == self._context.num_replicas, "Invalid shape of position input. Expecting the same " \
+                                                             "amount as the number of replicas"\
+                                                             "({:d}).".format(self._context.num_replicas)
+        for i, posi in enumerate(positions):
+            self._context.set_positions(i, posi)
+        self._positions_set = True
+
+    def set_velocities_to_temp(self):
+        """Assign random velocities according to Maxwell-Boltzmann distribution according to the intended temperature.
+        """
+        assert self._positions_set, "System positions are not yet set."
+        for i in range(self._context.num_replicas):
+            self._context.set_velocities(i)
+
     def run(self, steps: int):
         """Running `steps` steps of simulation on all underlying replicas with the consideration of attached hooks."""
+        assert self._positions_set, "System positions are not yet set."
         intended_stop = self._current_step + steps
         if self._verbose:
             print("{:d} steps (Step {:d} -> Step {:d}) will be run.".format(steps, self._current_step, intended_stop))
@@ -115,6 +137,13 @@ class MultiTSimulation:
         if self._verbose:
             print("{:d} steps (Step {:d} -> Step {:d}) will be run.".format(steps, intended_stop - steps,
                                                                             self._current_step))
+
+    def reset_step_counter(self) -> int:
+        """Reset the step counter and return the current number.
+        Can be useful for production run after equilibration."""
+        current_step = self._current_step
+        self._current_step = 0
+        return current_step
 
     def _update_interval_counter(self):
         """Decide whether to use the the GCD strategy or calculate remaining steps for each time."""

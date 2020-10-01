@@ -73,7 +73,7 @@ class OMMTReplicas(MultiTReplicas):
         """
         self._check_index(index)
         assert max_iterations >= 0, "Invalid number for iterations, should be non-negative."
-        omm.LocalEnergyMinimizer(self._contexts[index], tolerance, max_iterations)
+        omm.LocalEnergyMinimizer.minimize(self._contexts[index], tolerance, max_iterations)
 
     def set_velocities(self, index: int, velocities=None):
         """Set velocities for replica #index. If `velocities` is None, then a set of random velocities according to
