@@ -67,6 +67,14 @@ class OMMTReplicas(MultiTReplicas):
         self._check_index(index)
         self._contexts[index].setPositions(positions)
 
+    def minimize_energy(self, index: int, tolerance=10*unit.kilojoule/unit.mole, max_iterations: int = 0):
+        """Use openmm.LocalEnergyMinimizer to perform a local energy minimization. `max_iteration` should >=0,
+        =0 means that the minimization will continue until the potential energy converges within the given `tolerance`.
+        """
+        self._check_index(index)
+        assert max_iterations >= 0, "Invalid number for iterations, should be non-negative."
+        omm.LocalEnergyMinimizer(self._contexts[index], tolerance, max_iterations)
+
     def set_velocities(self, index: int, velocities=None):
         """Set velocities for replica #index. If `velocities` is None, then a set of random velocities according to
         desired temperatures will be set. Otherwise, `velocities` should be array-like and corresponding to the

@@ -89,6 +89,15 @@ class MultiTSimulation:
                 if self._verbose:
                     print("Hook #{:d}: {:s} is called at Step {:d}.".format(i, str(hook), self._current_step))
 
+    def minimize_energy(self, tolerance=10*unit.kilojoule/unit.mole, max_iterations: int = 100):
+        """Minimize the potential energies locally for all replicas.
+        Mimics the `minimizeEnergy` method of `simtk.openmm.app.Simulation`.
+        `tolerance` sets the criterion for energy convergence.
+        `max_iteration` sets the max number of iterations, if =0 then the minimization will continue until convergence.
+        """
+        for i in range(self._context.num_replicas):
+            self._context.minimize_energy(i, tolerance, max_iterations)
+
     def run(self, steps: int):
         """Running `steps` steps of simulation on all underlying replicas with the consideration of attached hooks."""
         intended_stop = self._current_step + steps
