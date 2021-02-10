@@ -10,7 +10,9 @@ from simtk.openmm import app
 import numpy as np
 
 
-N_FRAMES = 500
+N_FRAMES = 50
+EXCHANGE_INTERVAL = 100
+RECORDING_INTERVAL = 200
 
 
 def _prepare_capped_alanine_replicas(temps_intended) -> simu_utils.MultiTSimulation:
@@ -30,6 +32,12 @@ def _prepare_capped_alanine_replicas(temps_intended) -> simu_utils.MultiTSimulat
     simu.run(2000)  # pre-equilibration
     return simu
 
-def test_initiate_simulation():
+def test_full_simulation():
     temps_intended = [300., 350.]
     simu = _prepare_capped_alanine_replicas(temps_intended)
+    total_steps = N_FRAMES * EXCHANGE_INTERVAL
+    simu.register_regular_hook(simu_utils.ReplicaExchangeHook(), EXCHANGE_INTERVAL)
+    simu.register_regular_hook(simu_utils.NpyRecorderHook("/tmp/00100.npy", int(total_steps / RECORDING_INTERVAL), 100),
+                               RECORDING_INTERVAL)
+    #simu.print_regular_hooks()
+    simu.run(total_steps)

@@ -11,6 +11,7 @@ import simtk.openmm as omm
 import simtk.unit as unit
 
 from reform.omm import OMMTReplicas
+from reform import replica_exchange
 
 
 class SimulationHook(ABC):
@@ -29,6 +30,62 @@ class SimulationHook(ABC):
     def __str__(self) -> str:
         """Return a description of self for more informative printing/debugging."""
         pass
+
+
+class ReplicaExchangeHook(SimulationHook):
+    """Perform replica exchange when called.
+    """
+    
+    def __init__(self):
+        self._ex_engine = None
+    
+    def action(self, context: OMMTReplicas) -> None:
+        if self._ex_engine == None:
+            # initiate the exchange engine, if it's not yet initiated
+            self._ex_engine = replica_exchange.ReplicaExchange(context)
+        self._ex_engine.perform_exchange()
+    
+    def __str__(self) -> str:
+        return "Hook for replica exchange action."
+    
+
+class NpyRecorderHook(SimulationHook):
+    """Recording the trajectory when called.
+    """
+    
+    def __init__(self, saving_path, maximum_length, saving_interval=1000, dtype=np.float32):
+        assert dtype is np.float32 or np.float64, "Unrecognized dtype, should be either numpy.float32 or numpy.float64!"
+        self._dtype = dtype
+        self._saving_path = saving_path
+        self._max_len = maximum_length
+        self._save_int = saving_interval
+        self._count = -1
+    
+    def action(self, context: OMMTReplicas) -> None:
+        curr_posis = context.get_all_positions_as_numpy()
+        if self._count < 0:
+            # initiate the array for storage, if it's not yet initiated
+            self._count = 0
+            self._n_replica = curr_posis.shape[0]
+            self._n_atom = curr_posis.shape[1]
+            self._traj = np.empty((self._n_replica, self._max_len, self._n_atom, 3), dtype=self._dtype)
+        if self._count < self._max_len:
+            self._traj[:, self._count, :, :] = curr_posis
+            self._count += 1
+        else:
+            self.save()
+            raise MemoryError("Buffer full! Current trajectory is stored at %s." % self._saving_path)
+        if self._count % self._save_int == 0:
+            self.save()
+    
+    def save(self) -> None:
+        np.save(self._saving_path, self._traj[:, :self._count, :, :])
+    
+    def __del__(self):
+        self.save()
+    
+    def __str__(self) -> str:
+        return "Hook for storing trajectory to a npy file."
 
 
 class MultiTSimulation:
