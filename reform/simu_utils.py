@@ -75,14 +75,11 @@ class NpyRecorderHook(SimulationHook):
         else:
             self.save()
             raise MemoryError("Buffer full! Current trajectory is stored at %s." % self._saving_path)
-        if self._count % self._save_int == 0:
+        if self._count % self._save_int == 0 or self._count == self._max_len:
             self.save()
     
     def save(self) -> None:
         np.save(self._saving_path, self._traj[:, :self._count, :, :])
-    
-    def __del__(self):
-        self.save()
     
     def __str__(self) -> str:
         return "Hook for storing trajectory to a npy file."
@@ -192,8 +189,8 @@ class MultiTSimulation:
                 self._current_step += next_steps
                 self._check_out_regular_hooks()
         if self._verbose:
-            print("{:d} steps (Step {:d} -> Step {:d}) will be run.".format(steps, intended_stop - steps,
-                                                                            self._current_step))
+            print("{:d} steps (Step {:d} -> Step {:d}) has been run.".format(steps, intended_stop - steps,
+                                                                             self._current_step))
 
     def reset_step_counter(self) -> int:
         """Reset the step counter and return the current number.
@@ -212,6 +209,8 @@ class MultiTSimulation:
                 self._interval_gcd = max_interval  # otherwise it's too large and blocks the UI
             elif gcd < 10 or gcd < min(intervals) / len(intervals):
                 self._interval_gcd = 0  # it's not worthwhile in this case to use the GCD as simulation interval
+            else:
+                self._interval_gcd = int(gcd)
         else:
             self._interval_gcd = max_interval  # when there's no hook in the simulation
 
