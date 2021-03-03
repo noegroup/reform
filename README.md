@@ -26,9 +26,9 @@ Physcially, swappings following the above process will not affect the fact that 
 - [x] An abstract class for holding and enabling access to multiple replicas.
 - [x] Core replica exchange functionalities.
 - [x] Implementation of the multiple replicas with OpenMM.
-- [ ] Interfaces to the users.
+- [x] Interfaces to the users.
 - [x] Some test systems.
-- [ ] (Maybe not) Implementation of multiple replicas with the `replicated_systems` (speedups for small systems).
+- [ ] Implementation of multiple replicas with the `replicated_systems` (speedups for small systems and for neural networks).
 - [ ] Implementation of multiple replicas with concurrency in Python.
 
 ### Copyright

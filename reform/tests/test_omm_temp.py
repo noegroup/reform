@@ -15,7 +15,7 @@ N_FRAMES = 500
 
 def _prepare_capped_alanine_replicas(temps_intended) -> omm.OMMTReplicas:
     """Return an `OMMTReplicas` object of capped alanine system (defined by `tests/spep_0000.pdb`) with given
-    temperatures. Positions will be set """
+    temperatures. Positions will be set according to the pdb file."""
     pdb = app.PDBFile("spep_0000.pdb")
     ff = app.ForceField("amber99sbildn.xml")
     system = ff.createSystem(pdb.topology, nonbondedMethod=app.NoCutoff, constraints=app.HBonds,
