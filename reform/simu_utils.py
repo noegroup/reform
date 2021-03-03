@@ -110,11 +110,17 @@ class MultiTSimulation:
         else:
             raise NotImplementedError("Unknown OpenMM interface.")
 
+        self._integrator_params = integrator_params
         self._regular_hooks = []
         self._update_interval_counter()
         self._verbose = verbose
         self._current_step = 0
         self._positions_set = False
+
+    def get_time_step(self):
+        """Return time step setting in unit fs.
+        """
+        return self._integrator_params["time_step_in_fs"]
 
     def register_regular_hook(self, hook: SimulationHook, interval: int):
         assert interval > 0, "Invalid interval: it should be a positive integer."
@@ -228,3 +234,31 @@ class MultiTSimulation:
             steps_until_next_stop = min(remaining_steps)
         # now check if our `intended_stop` arrives earlier than the calculated stop
         return min(steps_until_next_stop, intended_stop - self._current_step)
+
+def recording_hook_setup(simu: MultiTSimulation, simu_time,
+        recording_interval, output_path,
+        exchange_interval=0.):
+    """Calculate the recording and (optional) replica exchange intervals
+    and register the correpsonding hooks in the given simulation object.
+    
+    Params:
+        simu: MultiTSimulation object
+        simu_time: intended simulation time for each replica in unit ps.
+        recording_interval: recording interval in unit ps.
+        output_path: path to the recording npy file.
+        exchange_interval: (optional) interval in ps for replica exchange.
+        
+    Return value:
+        number of step to run the simulation.
+    """
+    TIME_STEP = simu.get_time_step()
+    simu_steps = int(simu_time * 1_000 / TIME_STEP)
+    recording_steps = int(recording_interval * 1_000 / TIME_STEP)
+    num_recordings = int(simu_steps / recording_steps)
+    record_hook = NpyRecorderHook(output_path, num_recordings)
+    simu.register_regular_hook(record_hook, recording_steps)
+    if exchange_interval > 0:
+        exchange_steps = int(exchange_interval * 1_000 / TIME_STEP)
+        re_hook = ReplicaExchangeHook()
+        simu.register_regular_hook(re_hook, exchange_steps)
+    return simu_steps
