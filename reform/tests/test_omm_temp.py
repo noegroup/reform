@@ -9,14 +9,19 @@ from reform import omm
 from simtk.openmm import app
 import numpy as np
 
-
+PDB_FILE = "spep_0000.pdb"
 N_FRAMES = 500
+
+# get correct path to the pdb file
+import os
+test_dir = os.path.abspath(os.path.dirname(__file__))
+PDB_PATH = os.path.join(test_dir, PDB_FILE)
 
 
 def _prepare_capped_alanine_replicas(temps_intended) -> omm.OMMTReplicas:
     """Return an `OMMTReplicas` object of capped alanine system (defined by `tests/spep_0000.pdb`) with given
     temperatures. Positions will be set according to the pdb file."""
-    pdb = app.PDBFile("spep_0000.pdb")
+    pdb = app.PDBFile(PDB_PATH)
     ff = app.ForceField("amber99sbildn.xml")
     system = ff.createSystem(pdb.topology, nonbondedMethod=app.NoCutoff, constraints=app.HBonds,
                              hydrogenMass=4 * omm.unit.amu)
