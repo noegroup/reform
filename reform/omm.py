@@ -175,7 +175,7 @@ class OMMTReplicas(MultiTReplicas):
             "Checkpoint file is invalid: number of replicas is not consistent inside the file."
         assert len(chkpt["set_temps"]) == len(self._temps), "Checkpoint file is incompatible: number of replicas is " \
                                                             "not consistent with the current OMMTReplicas object."
-        assert chkpt["positions"].shape[2] == self._system.getNumParticles(), "Number of particles in the checkpoint " \
+        assert chkpt["positions"].shape[1] == self._system.getNumParticles(), "Number of particles in the checkpoint " \
                                                                               "file is inconsistent with the current " \
                                                                               "OpenMM system."
         # after checking we can load the positions and velocities
