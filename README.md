@@ -28,12 +28,12 @@ Physcially, swappings following the above process will not affect the fact that 
 - [x] Implementation of the multiple replicas with OpenMM.
 - [x] Interfaces to the users.
 - [x] Some test systems.
-- [ ] Implementation of multiple replicas with the `replicated_systems` (speedups for small systems and for neural networks).
+- [x] Implementation of multiple replicas with the `replicated_systems` (speedups for small systems and for neural network force fields).
 - [ ] Implementation of multiple replicas with concurrency in Python.
 
 ### Copyright
 
-Copyright (c) 2020, noegroup
+Copyright (c) 2020-2021, noegroup
 
 
 #### Acknowledgements

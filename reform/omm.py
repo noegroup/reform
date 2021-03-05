@@ -80,7 +80,7 @@ class OMMTReplicas(MultiTReplicas):
         desired temperatures will be set. Otherwise, `velocities` should be array-like and corresponding to the
         number of particles in the system. """
         self._check_index(index)
-        if velocities:
+        if velocities is not None:
             self._contexts[index].setVelocities(velocities)
         else:
             self._contexts[index].setVelocitiesToTemperature(self._temps[index])
@@ -131,7 +131,7 @@ class OMMTReplicas(MultiTReplicas):
 
     def get_instantaneous_temp(self, index: int) -> float:
         """Return the instantaneous temperature of replica #index"""
-        state = self.get_state(getEnergy=True)
+        state = self.get_state(index, getEnergy=True)
         e_k = state.getKineticEnergy().value_in_unit(unit.kilojoule_per_mole)
         temp = e_k * 2 / self._n_DoF / self._k
         return temp
@@ -175,7 +175,7 @@ class OMMTReplicas(MultiTReplicas):
             "Checkpoint file is invalid: number of replicas is not consistent inside the file."
         assert len(chkpt["set_temps"]) == len(self._temps), "Checkpoint file is incompatible: number of replicas is " \
                                                             "not consistent with the current OMMTReplicas object."
-        assert chkpt["positions"].shape[2] == self._system.getNumParticles(), "Number of particles in the checkpoint " \
+        assert chkpt["positions"].shape[1] == self._system.getNumParticles(), "Number of particles in the checkpoint " \
                                                                               "file is inconsistent with the current " \
                                                                               "OpenMM system."
         # after checking we can load the positions and velocities
