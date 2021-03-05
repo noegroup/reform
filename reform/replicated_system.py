@@ -369,6 +369,26 @@ class ReplicatedSystem():
     @staticmethod
     def _replicate_CustomGBForce(force, n_particles, n_replicas, enable_energies):
         raise NotImplementedError("Not implemented in the replicated system mode. Please check out the single threaded version instead.")
+        
+    @staticmethod
+    def _replicate_Force(force, n_particles, n_replicas, enable_energies):
+        # `TorchForce` object usually appears as a general base class object `Force`
+        # However, since it's downcasted, the model path is no longer accessible
+        # in other words, this force can't be replicated directly, rendering the code below useless :(
+        # I just leave the code here to convey the idea. -- Yaoyi 
+        try:
+            from openmmtorch import TorchForce
+            replicated_force = TorchForce(force.getFile())
+            replicated_force.setUsesPeriodicBoundaryConditions(force.usesPeriodicBoundaryConditions())
+            if enable_energies:
+                return NotImplemented
+            print("success!")
+            return [replicated_force]
+        except Exception as e:
+            print("Warning: unrecognized and unhandled `Force` object. It could be some customized forces. "
+                  "Please check your system and make sure it's properly handled. "
+                  "Suggestion: convert the force yourself for the replicated system and load the force yourself.")
+            raise e
 
 
 def get_custom_langevin_integrator(temperatures_per_dof_in_K, friction_in_inv_ps=1.0, time_step_in_ps=0.002):

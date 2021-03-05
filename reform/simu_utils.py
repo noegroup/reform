@@ -96,7 +96,8 @@ class MultiTSimulation:
     def __init__(self, system: omm.System, temps: List[float], interface: str="single_threaded",
                  integrator_params: dict = {"integrator": "Langevin", "friction_in_inv_ps": 1.0,
                                             "time_step_in_fs": 2.0},
-                 platform: str = "CPU", platform_prop=None, verbose=True):
+                 platform: str = "CPU", platform_prop=None,
+                 replicated_system_additional_forces=[], verbose=True):
         if platform_prop is None:
             platform_prop = {}
         self._replicated = False
@@ -105,14 +106,17 @@ class MultiTSimulation:
             self._context = OMMTReplicas(system, temps, integrator_params, platform, platform_prop)
         elif interface == "replicated_system":
             # replica exchange simulation with multiple temperatures can also be implemented by replica systems
-            self._context = OMMTReplicas_replicated(system, temps, integrator_params, platform, platform_prop)
+            self._context = OMMTReplicas_replicated(system, temps, replicated_system_additional_forces,
+                                                    integrator_params, platform, platform_prop)
             self._replicated = True
         elif interface == "":
             # TODO: this supports parallelization on multiple GPUs
             raise NotImplementedError("TODO")
         else:
             raise NotImplementedError("Unknown OpenMM interface.")
-
+        
+        if not self._replicated and len(replicated_system_additional_forces) > 0:
+            print("Warning: additional forces for non replicated systems. Please check your setup.")
         self._integrator_params = integrator_params
         self._regular_hooks = []
         self._update_interval_counter()

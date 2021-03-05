@@ -15,7 +15,7 @@ from reform.replicated_system import ReplicatedSystem, get_custom_langevin_integ
 
 
 class OMMTReplicas_replicated(OMMTReplicas):
-    def __init__(self, system: omm.System, temps: List[float],
+    def __init__(self, system: omm.System, temps: List[float], replicated_system_additional_forces=[],
                  integrator_params: dict = {"integrator": "Langevin", "friction_in_inv_ps": 1.0,
                                             "time_step_in_fs": 2.0},
                  platform: str = "CPU", platform_prop={}):
@@ -29,6 +29,8 @@ class OMMTReplicas_replicated(OMMTReplicas):
         if no_cmm is not None:
             system.removeForce(no_cmm)
         
+        self._additional_forces = replicated_system_additional_forces
+
         super(OMMTReplicas_replicated, self).__init__(system, temps, integrator_params, platform,
                                                       platform_prop)
         """
@@ -74,6 +76,8 @@ class OMMTReplicas_replicated(OMMTReplicas):
         
         # initiate the replicated context (for simulation)
         self._replicated_system = ReplicatedSystem.replicate_system(self._system, self._N)
+        for f in self._additional_forces:
+            self._replicated_system.addForce(f)
         temperatures_per_dof = np.concatenate([np.ones((self._system.getNumParticles(), 3)) * temp for temp in self._temps])
         integrator = get_custom_langevin_integrator(temperatures_per_dof, self._integrator_params["friction_in_inv_ps"],
                                                     self._integrator_params["time_step_in_fs"] * 0.001)
