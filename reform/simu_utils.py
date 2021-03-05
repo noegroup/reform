@@ -11,6 +11,7 @@ import simtk.openmm as omm
 import simtk.unit as unit
 
 from reform.omm import OMMTReplicas
+from reform.omm_replicated import OMMTReplicas_replicated
 from reform import replica_exchange
 
 
@@ -98,12 +99,14 @@ class MultiTSimulation:
                  platform: str = "CPU", platform_prop=None, verbose=True):
         if platform_prop is None:
             platform_prop = {}
+        self._replicated = False
         if interface == "single_threaded":
             # reference implementation, single threaded, slow, but should work in any situation
             self._context = OMMTReplicas(system, temps, integrator_params, platform, platform_prop)
         elif interface == "replicated_system":
-            # TODO: replica exchange simulation with multiple temperatures can also be implemented by replica systems
-            raise NotImplementedError("TODO")
+            # replica exchange simulation with multiple temperatures can also be implemented by replica systems
+            self._context = OMMTReplicas_replicated(system, temps, integrator_params, platform, platform_prop)
+            self._replicated = True
         elif interface == "":
             # TODO: this supports parallelization on multiple GPUs
             raise NotImplementedError("TODO")
@@ -158,8 +161,12 @@ class MultiTSimulation:
         `max_iteration` sets the max number of iterations, if =0 then the minimization will continue until convergence.
         """
         assert self._positions_set, "System positions are not yet set."
-        for i in range(self._context.num_replicas):
-            self._context.minimize_energy(i, tolerance, max_iterations)
+        if self._replicated:
+            # this is faster when replicated system is used
+            self._context.minimize_energy_all(tolerance, max_iterations)
+        else:
+            for i in range(self._context.num_replicas):
+                self._context.minimize_energy(i, tolerance, max_iterations)
 
     def set_positions(self, positions):
         """Setting positions for all replicas. `positions` should be a list/np.ndarray that have the same number of
@@ -168,8 +175,12 @@ class MultiTSimulation:
         assert len(positions) == self._context.num_replicas, "Invalid shape of position input. Expecting the same " \
                                                              "amount as the number of replicas"\
                                                              "({:d}).".format(self._context.num_replicas)
-        for i, posi in enumerate(positions):
-            self._context.set_positions(i, posi)
+        if self._replicated:
+            # this is faster when replicated system is used
+            self._context.set_positions_all(positions)
+        else:
+            for i, posi in enumerate(positions):
+                self._context.set_positions(i, posi)
         self._positions_set = True
 
     def set_velocities_to_temp(self):
@@ -234,6 +245,18 @@ class MultiTSimulation:
             steps_until_next_stop = min(remaining_steps)
         # now check if our `intended_stop` arrives earlier than the calculated stop
         return min(steps_until_next_stop, intended_stop - self._current_step)
+    
+    def save_chkpt(self, filepath: str = "./omm_chkpt.npz"):
+        """Save the current positions and velocities into a NumPy binary archive at given `filepath`.
+        Wrapper for `save_states` of the context object."""
+        self._context.save_states(filepath)
+    
+    def load_chkpt(self, filepath: str = "./omm_chkpt.npz", check_temps=True):
+        """Load positions and velocities from a NumPy binary archive at given `filepath` to contexts.
+        Wrapper for `load_states` of the context object."""
+        if filepath[-4:] != ".npz":
+            filepath += ".npz"
+        self._context.load_states(filepath, check_temps)
 
 def recording_hook_setup(simu: MultiTSimulation, simu_time,
         recording_interval, output_path,
