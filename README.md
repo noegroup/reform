@@ -33,7 +33,7 @@ Physcially, swappings following the above process will not affect the fact that 
 
 ### Copyright
 
-Copyright (c) 2020-2021, noegroup
+Copyright (c) 2020-2021, noegroup, published under the MIT License (a copy can be found in this repo)
 
 
 #### Acknowledgements
